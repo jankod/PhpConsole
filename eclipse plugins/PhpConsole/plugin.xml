@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="PHPConsole"
+            id="PhpConsole">
+      </category>
+      <view
+            allowMultiple="false"
+            category="PhpConsole"
+            class="hr.ja.views.ConsoleBrowserView"
+            icon="icons/console16.png"
+            id="hr.ja.views.ConsoleBrowserView"
+            name="PHP Console"
+            restorable="true">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.php.perspective">
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.console.ConsoleView"
+               relationship="right"
+               id="hr.ja.views.ConsoleBrowserView">
+         </view>
+      </perspectiveExtension>
+   </extension>
+
+</plugin>
