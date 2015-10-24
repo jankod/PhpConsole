@@ -3,5 +3,5 @@
    <description name="PhpConsole" url="https://github.com/jankod/PhpConsole/">
       Plugin
    </description>
-   <feature url="features/PhpConsole_0.0.1.jar" id="PhpConsole" version="0.0.1"/>
+   <feature url="features/PhpConsole_0.1.0.jar" id="PhpConsole" version="0.1.0"/>
 </site>
