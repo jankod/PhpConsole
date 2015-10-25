@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<site>
-   <description name="PhpConsole" url="https://github.com/jankod/PhpConsole/">
-      Plugin
-   </description>
-   <feature url="features/PhpConsole_0.1.1.jar" id="PhpConsole" version="0.1.1"/>
-</site>
