@@ -1,26 +1,98 @@
 <?php
 
-define("PHPCONSOLE_REFRESH_EVERY", 500); // ms
-
+// refresh console browser page every milisec
 function logInfo($msg, $vars = null) {
-	mylog ( $msg, "info", $vars );
+	phpconsole_mylog ( $msg, "info", $vars );
 }
 function logError($msg, $vars = null) {
-	mylog ( $msg, "error", $vars );
+	phpconsole_mylog ( $msg, "error", $vars );
 }
 function logDebug($msg, $vars = null) {
-	mylog ( $msg, "debug", $vars );
+	phpconsole_mylog ( $msg, "debug", $vars );
 }
 
-// Libs
-class PhpConsoleUtil {
+/**
+ *
+ * @author Janko Diminic
+ *        
+ */
+class PhpConsole {
 	
-	// User may change this path for sqlite db
-	private $dbPath = null;
+	/**
+	 * Default value is 500 ms.
+	 * 
+	 * @var string CONF_REFRESH_EVERY
+	 */
+	const CONF_REFRESH_EVERY = "refresh";
 	
+	/**
+	 * Default value is: .
+	 * /debug_log.sqlite3
+	 * 
+	 * @var string CONF_DB_PATH
+	 */
+	const CONF_DB_PATH = "db_path";
 	
+	/**
+	 * Default value is true.
+	 * 
+	 * @var unknown CONF_ENABLE_LOG
+	 */
+	const CONF_ENABLE_LOG = "enable";
 	
+	/**
+	 * Default value is PhpConsole->defaultVarsFormater($vars) function.
+	 * 
+	 * @var unknown CONF_VARS_FORMATER_FUNC
+	 */
+	const CONF_VARS_FORMATER_FUNC = "vars_formater_function";
+	public static $conf = array (
+			// Default values
+			self::CONF_REFRESH_EVERY => 500,
+			self::CONF_ENABLE_LOG => true 
+	);
+	public static function defaultVarsFormater($vars) {
+		if ($vars == null || $vars == "") {
+			return null;
+		}
+		if (! is_array ( $vars )) {
+			$vars = array (
+					$vars 
+			);
+		}
+		$resutl = "";
+		$first = true;
+		foreach ( $vars as $v ) {
+			$e = htmlspecialchars ( var_export ( $v, true ) );
+			if (! $first) {
+				$resutl .= ", " . $e;
+			} else {
+				$resutl .= " " . $e;
+			}
+			$first = false;
+		}
+		return $resutl;
+	}
 	
+	/**
+	 * Enable log message.
+	 */
+	public static function enable() {
+		self::$conf [self::CONF_ENABLE_LOG] = true;
+	}
+	
+	/**
+	 * Disable log message.
+	 */
+	public static function disable() {
+		self::$conf [self::CONF_ENABLE_LOG] = false;
+	}
+	
+	/**
+	 * Singleton
+	 *
+	 * @var PhpConsoleUtil $instance
+	 */
 	private static $instance;
 	public function deleteAll() {
 		$this->db->exec ( "DELETE FROM messages" );
@@ -28,7 +100,7 @@ class PhpConsoleUtil {
 	
 	/**
 	 *
-	 * @return PhpConsoleUtil
+	 * @return PhpConsole
 	 */
 	public static function get() {
 		if (null === static::$instance) {
@@ -43,12 +115,16 @@ class PhpConsoleUtil {
 	 */
 	private $db;
 	private function __construct() {
-		if ($this->dbPath == null) {
-			$this->dbPath = realpath ( dirname ( __FILE__ ) ) . "/debug_log.sqlite3";
+		if ( isset ( self::$conf [self::CONF_DB_PATH] )) {
+			$dbPath = self::$conf [self::CONF_DB_PATH];
+		} else {
+			$dbPath = realpath ( dirname ( __FILE__ ) ) . "/debug_log.sqlite3";
 		}
-		$db = new PDO ( 'sqlite:' . $this->dbPath );
-		$db->setAttribute ( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-		$db->exec ( "CREATE TABLE IF NOT EXISTS messages (
+		
+		$this->db = new \PDO ( 'sqlite:' . $dbPath );
+		
+		$this->db->setAttribute ( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+		$this->db->exec ( "CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT ,
                     msg TEXT,
 					type TEXT,
@@ -56,8 +132,6 @@ class PhpConsoleUtil {
 					line INTEGER,
 					html TEXT,
                     time INTEGER)" );
-		
-		$this->db = $db;
 	}
 	public function addAll($msg, $file, $line, $type, $html = null) {
 		$stmt = $this->db->prepare ( "INSERT INTO messages (id, msg, file, line, type, html, time)
@@ -71,65 +145,44 @@ class PhpConsoleUtil {
 				time () 
 		] );
 	}
-	public function addNERADI($msgJson) {
-		$stmt = $this->db->prepare ( "INSERT INTO messages (id, msg, time)
-                VALUES (NULL, ?, ?)" );
-		$stmt->execute ( [ 
-				$msgJson,
-				time () 
-		] );
-	}
-	public function getAllMsg() {
-		$result = $this->db->query ( "SELECT * FROM messages" );
-		return $result->fetchAll ( PDO::FETCH_ASSOC );
-	}
 	public function getAllMoreThan($moreThen) {
-		$result = $this->db->query ( "SELECT * FROM messages WHERE id > " . $moreThen . " ORDER BY time DESC LIMIT 200" );
+		$result = $this->db->query ( "SELECT * FROM messages WHERE id > " . $moreThen . " ORDER BY time ASC LIMIT 200" );
 		return $result->fetchAll ( PDO::FETCH_ASSOC );
 	}
-}
-
-function mylog($msg, $type, $vars = null) {
-	$msg = htmlspecialchars($msg);
-	$html = createHTML ( $vars );
-	$c = getCaller ( debug_backtrace ( DEBUG_BACKTRACE_IGNORE_ARGS, 2 ) [1] ['function'] );
-	$pi = pathinfo ( $c ["file"] );
-	PhpConsoleUtil::get ()->addAll ( $msg, $c ["file"], $c ["line"], $type, $html );
-}
-function createHTML($vars) {
-	if ($vars == null || $vars == "") {
-		return null;
+	public function deleteMessageFromSession() {
+		PhpConsole::$instance->deleteAll ();
 	}
-	if (! is_array ( $vars )) {
-		$t = array (
-				$vars 
-		);
-		$vars = $t;
-	}
-	$resutl = "";
-	foreach ( $vars as $v ) {
-		if ($resutl != "") {
-			//$resutl .= "<br>";
+	public function showJson() {
+		header ( 'Content-Type: application/json' );
+		
+		if (isset ( $_GET ["PhpConsoleLastId"] )) {
+			$lastId = ( int ) $_GET ["PhpConsoleLastId"];
+			
+			$res = PhpConsole::get ()->getAllMoreThan ( $lastId );
+			
+			echo json_encode ( $res );
+			return;
 		}
-		$e = htmlspecialchars(var_export ( $v, true ));
-		$resutl .= $e;
 	}
-	return $resutl;
 }
-function deleteMessageFromSession() {
-	PhpConsoleUtil::get ()->deleteAll ();
-}
-function showJson() {
-	header ( 'Content-Type: application/json' );
-	
-	if (isset ( $_GET ["PhpConsoleLastId"] )) {
-		$lastId = ( int ) $_GET ["PhpConsoleLastId"];
-		
-		$res = PhpConsoleUtil::get ()->getAllMoreThan ( $lastId );
-		
-		echo json_encode ( $res );
+function phpconsole_mylog($msg, $type, $vars = null) {
+	if (! PhpConsole::$conf [PhpConsole::CONF_ENABLE_LOG]) {
 		return;
 	}
+	$msg = htmlspecialchars ( $msg );
+	
+	if (isset ( PhpConsole::$conf [PhpConsole::CONF_VARS_FORMATER_FUNC] )) {
+		$funcFormater = PhpConsole::$conf [PhpConsole::CONF_VARS_FORMATER_FUNC];
+		$html = $funcFormater ( $vars );
+	} else {
+		$html = PhpConsole::defaultVarsFormater ( $vars );
+	}
+	// var_dump($funcFormater);
+	
+	// $html = PhpConsoleUtil::get ()->createHTML ( $vars );
+	$c = getCaller ( debug_backtrace ( DEBUG_BACKTRACE_IGNORE_ARGS, 2 ) [1] ['function'] );
+	$pi = pathinfo ( $c ["file"] );
+	PhpConsole::get ()->addAll ( $msg, $c ["file"], $c ["line"], $type, $html );
 }
 function getCaller($functionName) {
 	$d = debug_backtrace ( DEBUG_BACKTRACE_IGNORE_ARGS );
@@ -149,13 +202,13 @@ function getCaller($functionName) {
 }
 
 if (isset ( $_GET ["PhpConsoleDelete"] )) {
-	deleteMessageFromSession ();
+	PhpConsole::get ()->deleteMessageFromSession ();
 	return;
 }
 
 if (isset ( $_GET ["PhpConsoleLastId"] )) {
 	// call from js, echo data
-	showJson ();
+	PhpConsole::get ()->showJson ();
 	return;
 }
 
@@ -176,12 +229,18 @@ void 0===c?d&&"get"in d&&null!==(e=d.get(a,b))?e:(e=n.find.attr(a,b),null==e?voi
 
 var lastId = -1;
 var editorFiles = new Array();
-var refreshEvery =<?php echo PHPCONSOLE_REFRESH_EVERY ?> ; // ms
+var refreshEvery =<?php echo  PhpConsole::$conf[PhpConsole::CONF_REFRESH_EVERY]  ?> ; // ms
 function showMessage() {
     $.getJSON(
         "?PhpConsoleLastId=" + lastId,
         function (data) {
+			if(data.length == 0 &&  lastId == -1) {
+				$("#firstMsg").html("<small>No message</small>");
+			}else {
+				$("#firstMsg").empty();
+			}
 
+        	
             $.each(data, function (key, val) {
                 var msgList = $("#msg");
                 val.id = parseInt(val.id);
@@ -206,9 +265,12 @@ function showMessage() {
                     
                     msgList.append('<a id="#aa' + val.id
                         + '" class="list-group-item ' + cl
-                        + '" href="#" onclick="openEditor(' + val.id
+                        + '" href="#" onclick="return openEditor(' + val.id
                         + ')">' + html +'</a>');
-                    lastId = val.id;
+                    
+                    if(lastId < val.id) {
+                    	lastId = val.id;
+                    }
                 }
 
                 var n = $(document).height();
@@ -253,10 +315,10 @@ $(document).ready(function () {
 </script>
 
 <style type="text/css">
-<!--From Bootstrap CSS -->
-.variables  {
+.variables {
 	
 }
+
 body {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 14px;
@@ -310,6 +372,7 @@ ul, ol {
 </style>
 </head>
 <body>
+	<span id="firstMsg"></span>
 	<div>
 		<ul id="msg" class="list-group">
 		</ul>
