@@ -8,6 +8,7 @@ PHP console is eclipse plugin and PHP script for easier debugging and developmen
 	(On eclipse: Help -> Install New Software... )
 
 2. Download one PHP script: phpconsole.php and put into your WEB project directory.
+https://raw.githubusercontent.com/jankod/PhpConsole/master/phpconsole.php
 3. In eclipse open plugin view: Window -> Show View -> Other... PhpConsole
 4. And enter URL of phpconsole.php script with (for example: http://localhost/projectXYZ/phpconsole.php)
 !["Sc1"](https://raw.githubusercontent.com/jankod/PhpConsole/master/sc2.PNG "Screenshot 1")
