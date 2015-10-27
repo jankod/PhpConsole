@@ -9,11 +9,13 @@ PHP console is eclipse plugin and PHP script for easier debugging and developmen
 
 2. Download one PHP script: phpconsole.php and put into your WEB project directory.
 3. In eclipse open plugin view: Window -> Show View -> Other... PhpConsole
-4. And enter URL of phpconsole.php script (for example: http://localhost/projectXYZ/phpconsole.php)
+4. And enter URL of phpconsole.php script with (for example: http://localhost/projectXYZ/phpconsole.php)
+!["Sc1"](https://raw.githubusercontent.com/jankod/PhpConsole/master/sc2.PNG "Screenshot 1")
+
 5. On your other php script include phpconsole.php script and call logDebug("message").
 
 
 
 Screenshot:
-![alt text](https://raw.githubusercontent.com/jankod/PhpConsole/master/sc1-text.PNG "Screenshot 1")
+![Sc2](https://raw.githubusercontent.com/jankod/PhpConsole/master/sc1-text.PNG "Screenshot 2")
 
